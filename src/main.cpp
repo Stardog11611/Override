@@ -4,15 +4,21 @@
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-// motor groups
-pros::MotorGroup leftMotors({-5, 4, -3},
-                            pros::MotorGearset::blue); // left motor group - ports 3 (reversed), 4, 5 (reversed)
-pros::MotorGroup rightMotors({6, -9, 7}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
+// motors and motor groups
+// drivetrain
+pros::Motor leftLittleMotor(-14, E_MOTOR_GEAR_GREEN)
+pros::Motor rightLittleMotor(-17, E_MOTOR_GEAR_GREEN)
+pros::MotorGroup leftMotors({-13, leftLittleMotor, -15}, pros::MotorGearset::blue); // left motors - idk if setting gears to blue will work with leftLittleMotor
+pros::MotorGroup rightMotors({16, rightLittleMotor, 18}, pros::MotorGearset::blue); // right motors - see above
+// winch
+pros::MotorGroup winchMotors({-1, 9}, pros::MotorGearset::blue); // winch motors - up is positive
+// toggle motor
+pros::Motor toggleMotor(8, E_MOTOR_GEAR_GREEN)
 
 // Inertial Sensor on port 10
 pros::Imu imu(10);
 
-// tracking wheels
+// tracking wheels - WE DON'T HAVE ANY YET
 // horizontal tracking wheel encoder. Rotation sensor, port 20, not reversed
 pros::Rotation horizontalEnc(20);
 // vertical tracking wheel encoder. Rotation sensor, port 11, reversed
@@ -25,10 +31,10 @@ lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, -2.5);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
-                              10, // 10 inch track width
-                              lemlib::Omniwheel::NEW_4, // using new 4" omnis
-                              360, // drivetrain rpm is 360
-                              2 // horizontal drift is 2. If we had traction wheels, it would have been 8
+                              10, // 10 inch track width - it's 10.25 center to center, but 9.5 in between wheels
+                              3.25, // using 3.25" wheels
+                              450, // drivetrain rpm is 450
+                              8 // horizontal drift 8 with traction wheels. 2 without?
 );
 
 // lateral motion controller
