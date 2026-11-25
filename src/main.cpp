@@ -1,4 +1,5 @@
 #include "main.h"
+#include "pros/adi.hpp"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 
 // controller
@@ -6,14 +7,29 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // motors and motor groups
 // drivetrain
-pros::Motor leftLittleMotor(-14, E_MOTOR_GEAR_GREEN)
-pros::Motor rightLittleMotor(-17, E_MOTOR_GEAR_GREEN)
-pros::MotorGroup leftMotors({-13, leftLittleMotor, -15}, pros::MotorGearset::blue); // left motors - idk if setting gears to blue will work with leftLittleMotor
-pros::MotorGroup rightMotors({16, rightLittleMotor, 18}, pros::MotorGearset::blue); // right motors - see above
+uint8_t leftFrontPort = -13; //use these variables so i can easily change port im to lazy rn tho
+uint8_t leftLittlePort = -14;
+uint8_t leftBackPort = -15;
+pros::Motor leftFrontMotor(leftFrontPort, pros::MotorGearset::blue);
+pros::Motor leftLittleMotor(leftLittlePort, pros::MotorGearset::green);
+pros::Motor leftBackMotor(leftBackPort, pros::MotorGearset::blue);
+
+uint8_t rightFrontPort = 18; //use these variables so i can easily change port im to lazy rn tho
+uint8_t rightLittlePort = 17;
+uint8_t rightBackPort = 16;
+pros::Motor rightFrontMotor(rightFrontPort, pros::MotorGearset::blue);
+pros::Motor rightLittleMotor(rightLittlePort, pros::MotorGearset::green);
+pros::Motor rightBackMotor(rightBackPort, pros::MotorGearset::blue);
+
+pros::MotorGroup leftMotors({leftFrontPort, leftLittlePort, leftBackPort}); // left motors - idk if setting gears to blue will work with leftLittleMotor
+pros::MotorGroup rightMotors({rightFrontPort, rightLittlePort, rightBackPort}); // right motors - see above
 // winch
 pros::MotorGroup winchMotors({-1, 9}, pros::MotorGearset::blue); // winch motors - up is positive
 // toggle motor
-pros::Motor toggleMotor(8, E_MOTOR_GEAR_GREEN)
+pros::Motor toggleMotor(8, pros::MotorGearset::green);
+
+// Pneumatics
+pros::adi::Pneumatics clawPiston('A', false);
 
 // Inertial Sensor on port 10
 pros::Imu imu(10);
@@ -171,12 +187,54 @@ void autonomous() {
 void opcontrol() {
     // controller
     // loop to continuously update motors
+
+    bool clawPistonExtended = false;
+
     while (true) {
         // get joystick positions
         int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
         // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
+
+        // buttons
+        if(controller.get_digital(DIGITAL_R1)){
+            winchMotors.move_velocity(600);
+        }
+        else{
+            winchMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+            winchMotors.move_velocity(0);
+        }
+
+        if(controller.get_digital(DIGITAL_R2)){
+            winchMotors.move_velocity(-150);
+        }
+
+        if(controller.get_digital(DIGITAL_L1)){
+            if(clawPistonExtended){
+                clawPiston.retract();
+                clawPistonExtended = false;
+                pros::delay(200);
+            }
+            else{
+                clawPiston.extend();
+                clawPistonExtended = true;
+                pros::delay(200);
+            }
+        }
+
+        if(controller.get_digital(DIGITAL_L2)){
+            toggleMotor.move_velocity(200);
+        }
+        else{
+            toggleMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+            toggleMotor.move_velocity(0);
+        }
+
+        if(controller.get_digital(DIGITAL_DOWN)){
+            toggleMotor.move_velocity(-50);
+        }
+
         // delay to save resources
         pros::delay(10);
     }
